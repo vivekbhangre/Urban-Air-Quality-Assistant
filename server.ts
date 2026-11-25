@@ -2,12 +2,12 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { TailoredPlanResponse } from './src/types/air';
+import type { TailoredPlanResponse } from './src/types/air.ts';
 import {
   normalizeAdvisorReply,
   normalizeCustomHack,
   normalizeTailoredPlan,
-} from './src/utils/normalizeAi';
+} from './src/utils/normalizeAi.ts';
 import {
   ADVISOR_CHAT_SCHEMA,
   BoundedTtlCache,
@@ -23,7 +23,7 @@ import {
   profileCacheKey,
   TAILORED_PLAN_SCHEMA,
   thinkingConfigForModel,
-} from './server/gemini';
+} from './server/gemini.ts';
 import {
   createRateLimitMiddleware,
   securityHeadersMiddleware,
@@ -31,7 +31,7 @@ import {
   validateChatRequest,
   validateHackRequest,
   validateProfilePayload,
-} from './server/security';
+} from './server/security.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

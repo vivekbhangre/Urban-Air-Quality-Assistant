@@ -1,5 +1,5 @@
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
-import type { SanitizedProfilePayload } from './security';
+import type { SanitizedProfilePayload } from './security.ts';
 
 export const GEMINI_MODEL = 'gemini-4-hydrogen';
 export const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite';
@@ -167,11 +167,13 @@ export function parseModelJson<T>(rawText: string): T {
  */
 export class BoundedTtlCache<T> {
   private readonly store = new Map<string, { value: T; expiresAt: number }>();
+  private readonly ttlMs: number;
+  private readonly maxEntries: number;
 
-  constructor(
-    private readonly ttlMs: number,
-    private readonly maxEntries = 50
-  ) {}
+  constructor(ttlMs: number, maxEntries = 50) {
+    this.ttlMs = ttlMs;
+    this.maxEntries = maxEntries;
+  }
 
   get(key: string, now = Date.now()): T | undefined {
     const entry = this.store.get(key);

@@ -162,13 +162,13 @@ export function validateChatRequest(
  */
 export class SlidingWindowRateLimiter {
   private readonly hits = new Map<string, number[]>();
+  private readonly maxRequests: number;
+  private readonly windowMs: number;
   private readonly maxEntries: number;
 
-  constructor(
-    private readonly maxRequests: number,
-    private readonly windowMs: number,
-    maxEntries = 1000
-  ) {
+  constructor(maxRequests: number, windowMs: number, maxEntries = 1000) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
     this.maxEntries = maxEntries;
   }
 

@@ -1,4 +1,4 @@
-import type { IndoorHack, RoutineBlock, TailoredPlanResponse } from '../types/air';
+import type { IndoorHack, RoutineBlock, TailoredPlanResponse } from '../types/air.ts';
 
 type UnknownRecord = Record<string, unknown>;
 
