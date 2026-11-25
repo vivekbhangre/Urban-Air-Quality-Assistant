@@ -56,3 +56,11 @@ ClearWinter is a GenAI-powered web application that helps families and communiti
    npm run lint
    npm run build
    ```
+
+## Running with Docker
+
+```bash
+docker build -t clearwinter .
+docker run -p 3000:3000 -e GEMINI_API_KEY="your_api_key_here" clearwinter
+```
+

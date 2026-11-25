@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.playwright-cli
+.aistudio
+public/assets/aistudio
+*.log
+*.test.ts
+server/*.test.ts
+src/**/*.test.ts
