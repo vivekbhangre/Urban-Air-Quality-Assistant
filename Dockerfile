@@ -1,9 +1,9 @@
 # Stage 1: Build the Vite frontend bundle
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund
 
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
@@ -11,14 +11,14 @@ COPY src ./src
 RUN npm run build
 
 # Stage 2: Minimal production runtime
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
 COPY package.json ./
-RUN npm install --omit=dev && npm cache clean --force
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # Copy built frontend and only the server runtime modules
 COPY --from=builder /app/dist ./dist
