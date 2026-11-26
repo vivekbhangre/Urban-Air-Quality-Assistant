@@ -343,3 +343,66 @@ export function thinkingConfigForModel(model: string): { thinkingLevel: Thinking
     ? { thinkingLevel: ThinkingLevel.MINIMAL }
     : LOW_LATENCY_THINKING;
 }
+
+export interface StructuredGeminiRequest<T> {
+  endpoint: string;
+  contents: string;
+  systemInstruction: string;
+  responseSchema: Record<string, unknown>;
+  missingKeyMessage: string;
+  emptyResponseMessage: string;
+  normalize: (parsed: unknown) => T;
+  cooldowns?: Map<string, number>;
+  models?: readonly string[];
+}
+
+export type StructuredGeminiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number; error: string };
+
+/**
+ * Executes a structured-JSON Gemini call with shared API key checks, model fallback,
+ * empty-response handling, response normalization, and status-mapped error handling.
+ */
+export async function runStructuredGeminiCall<T>(
+  req: StructuredGeminiRequest<T>
+): Promise<StructuredGeminiResult<T>> {
+  const ai = getGeminiClient();
+  if (!ai) {
+    return { ok: false, status: 503, error: req.missingKeyMessage };
+  }
+
+  try {
+    const response = await generateWithModelFallback(
+      (model) =>
+        ai.models.generateContent({
+          model,
+          contents: req.contents,
+          config: {
+            thinkingConfig: thinkingConfigForModel(model),
+            systemInstruction: req.systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: req.responseSchema,
+          },
+        }),
+      req.models ?? [GEMINI_MODEL, GEMINI_FALLBACK_MODEL],
+      req.cooldowns
+    );
+
+    const rawText = (response.text ?? '').trim();
+    if (!rawText) {
+      return { ok: false, status: 502, error: req.emptyResponseMessage };
+    }
+
+    return { ok: true, data: req.normalize(parseModelJson(rawText)) };
+  } catch (error) {
+    const mapped = mapGeminiError(error);
+    if (mapped.status >= 500) {
+      console.error(`[ClearWinter] ${req.endpoint} error:`, error instanceof Error ? error.message : error);
+    } else {
+      console.warn(`[ClearWinter] ${req.endpoint} returned ${mapped.status}: ${mapped.message}`);
+    }
+    return { ok: false, status: mapped.status, error: mapped.message };
+  }
+}
+

@@ -1,4 +1,4 @@
-import { memo, useState, type KeyboardEvent } from 'react';
+import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { HourlyAirPoint } from '../types/air';
 
 interface InversionChartProps {
@@ -8,16 +8,26 @@ interface InversionChartProps {
   city: string;
 }
 
+function defaultFocusIndex(points: HourlyAirPoint[], ventilationStartHour: number): number {
+  const idx = points.findIndex((p) => p.hour === ventilationStartHour);
+  return idx >= 0 ? idx : Math.floor(points.length / 2);
+}
+
 export const InversionChart = memo(function InversionChart({
   points,
   ventilationStartHour,
   ventilationEndHour,
   city,
 }: InversionChartProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number>(() => {
-    const idx = points.findIndex((p) => p.hour === ventilationStartHour);
-    return idx >= 0 ? idx : Math.floor(points.length / 2);
-  });
+  const gradientId = useId();
+  const circleRefs = useRef<Array<SVGCircleElement | null>>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(() =>
+    defaultFocusIndex(points, ventilationStartHour)
+  );
+
+  useEffect(() => {
+    setSelectedIndex(defaultFocusIndex(points, ventilationStartHour));
+  }, [city, ventilationStartHour, points.length]);
 
   const width = 520;
   const height = 216;
@@ -52,16 +62,39 @@ export const InversionChart = memo(function InversionChart({
   const activePoint = coords[Math.min(selectedIndex, Math.max(0, coords.length - 1))];
   const yTicks = [0, Math.round(maxPm * 0.35), Math.round(maxPm * 0.7), Math.round(maxPm)];
 
+  const moveSelection = (nextIdx: number) => {
+    const bounded = Math.max(0, Math.min(coords.length - 1, nextIdx));
+    setSelectedIndex(bounded);
+    circleRefs.current[bounded]?.focus();
+  };
+
   const handlePointKeyDown = (idx: number, e: KeyboardEvent<SVGCircleElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setSelectedIndex(idx);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      setSelectedIndex(Math.min(coords.length - 1, idx + 1));
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      setSelectedIndex(Math.max(0, idx - 1));
+    switch (e.key) {
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        setSelectedIndex(idx);
+        break;
+      case 'ArrowRight':
+      case 'ArrowUp':
+        e.preventDefault();
+        moveSelection(idx + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        e.preventDefault();
+        moveSelection(idx - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        moveSelection(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        moveSelection(coords.length - 1);
+        break;
+      default:
+        break;
     }
   };
 
@@ -100,13 +133,12 @@ export const InversionChart = memo(function InversionChart({
           aria-label={`24-hour winter PM2.5 curve for ${city}`}
         >
           <defs>
-            <linearGradient id="inversionFill" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#0F172A" stopOpacity="0.14" />
               <stop offset="100%" stopColor="#0F172A" stopOpacity="0.01" />
             </linearGradient>
           </defs>
 
-          {/* Horizontal grid lines */}
           {yTicks.map((tick) => {
             const y = padTop + plotH - (tick / maxPm) * plotH;
             return (
@@ -131,7 +163,6 @@ export const InversionChart = memo(function InversionChart({
             );
           })}
 
-          {/* Best midday ventilation window highlight */}
           {ventStartCoord && ventEndCoord && (
             <g>
               <rect
@@ -153,7 +184,6 @@ export const InversionChart = memo(function InversionChart({
             </g>
           )}
 
-          {/* WHO 24h guideline line (15 µg/m³) */}
           {whoY > padTop && whoY < padTop + plotH && (
             <g>
               <line
@@ -176,8 +206,7 @@ export const InversionChart = memo(function InversionChart({
             </g>
           )}
 
-          {/* Area & Line */}
-          <path d={areaPath} fill="url(#inversionFill)" />
+          <path d={areaPath} fill={`url(#${gradientId})`} />
           <path
             d={linePath}
             fill="none"
@@ -187,7 +216,6 @@ export const InversionChart = memo(function InversionChart({
             strokeLinecap="round"
           />
 
-          {/* Interactive keyboard-accessible nodes */}
           {coords.map((pt) => {
             const isSelected = activePoint?.idx === pt.idx;
             const isVent = pt.hour >= ventilationStartHour && pt.hour <= ventilationEndHour;
@@ -205,6 +233,9 @@ export const InversionChart = memo(function InversionChart({
                   />
                 )}
                 <circle
+                  ref={(el) => {
+                    circleRefs.current[pt.idx] = el;
+                  }}
                   cx={pt.x}
                   cy={pt.y}
                   r={isSelected ? 5.5 : 3.5}

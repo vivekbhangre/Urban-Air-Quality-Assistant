@@ -7,6 +7,8 @@ import {
   estimateIndoorPm25,
   findBestVentilationWindow,
   generateProfileRoutine,
+  isSwapTailoredToProfile,
+  sortSwapsForProfile,
   validateCustomHackPrompt,
   validateProfileInput,
 } from './airImpact';
@@ -184,4 +186,30 @@ test('aqiToEstimatedPm25 produces monotonic realistic PM2.5 concentrations', () 
   assert.ok(aqiToEstimatedPm25(50) <= 15);
   assert.ok(aqiToEstimatedPm25(150) > aqiToEstimatedPm25(100));
   assert.ok(aqiToEstimatedPm25(250) > 150);
+});
+
+test('isSwapTailoredToProfile and sortSwapsForProfile prioritize relevant household swaps', () => {
+  const transitOnlyProfile = {
+    heating: 'district_heating' as const,
+    commute: 'solo_car' as const,
+    cooking: 'induction' as const,
+    sensitivities: [] as HouseholdProfile['sensitivities'],
+  };
+
+  assert.equal(
+    isSwapTailoredToProfile({ id: 'swap-no-wood-burn' }, transitOnlyProfile),
+    false
+  );
+  assert.equal(
+    isSwapTailoredToProfile({ id: 'swap-cold-start-transit' }, transitOnlyProfile),
+    true
+  );
+
+  const tailoredSwaps: SustainableSwap[] = [
+    { ...sampleSwaps[0], id: 'swap-no-wood-burn' },
+    { ...sampleSwaps[1], id: 'swap-cold-start-transit' },
+  ];
+
+  const sorted = sortSwapsForProfile(tailoredSwaps, transitOnlyProfile);
+  assert.equal(sorted[0].id, 'swap-cold-start-transit');
 });

@@ -101,7 +101,7 @@ export function IndoorAirView({
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
             }`}
           >
-            <Flame className="w-4 h-4" />
+            <Flame className="w-4 h-4" aria-hidden="true" />
             <span>{isCookingActive ? 'Simulating Active Cooking' : 'Simulate Dinner Cooking Spike'}</span>
           </button>
         </div>
@@ -262,7 +262,7 @@ export function IndoorAirView({
                           : 'bg-white border-slate-300 text-slate-700 hover:border-[#0F766E]'
                       }`}
                     >
-                      {isActive && <Check className="w-3.5 h-3.5" />}
+                      {isActive && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
                       <span>{isActive ? 'Active' : 'Enable'}</span>
                     </button>
                   </div>
@@ -288,9 +288,9 @@ export function IndoorAirView({
                     >
                       <span>{isExpanded ? 'Hide steps' : 'How to set up'}</span>
                       {isExpanded ? (
-                        <ChevronUp className="w-3.5 h-3.5" />
+                        <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5" />
+                        <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
                       )}
                     </button>
                   </div>
@@ -331,6 +331,8 @@ export function IndoorAirView({
               id="custom-hack-challenge"
               rows={2}
               value={challengeInput}
+              aria-invalid={Boolean(validationError)}
+              aria-describedby={validationError ? 'custom-hack-error' : undefined}
               onChange={(e) => {
                 setChallengeInput(e.target.value);
                 if (validationError) setValidationError(null);
@@ -339,7 +341,7 @@ export function IndoorAirView({
               className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
             />
             {validationError && (
-              <p role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
+              <p id="custom-hack-error" role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
                 {validationError}
               </p>
             )}
@@ -350,7 +352,7 @@ export function IndoorAirView({
               role="alert"
               className="flex items-start gap-2.5 p-3.5 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#991B1B]"
             >
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
               <span>{customHackError}</span>
             </div>
           )}
@@ -364,7 +366,7 @@ export function IndoorAirView({
               disabled={isGeneratingHack}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#0F766E] rounded-lg hover:bg-[#0D655E] disabled:opacity-60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               <span>{isGeneratingHack ? 'Designing Hack…' : 'Create Custom Hack'}</span>
             </button>
           </div>

@@ -382,3 +382,50 @@ export function scaleCurveToPm25(preset: CityPreset, targetPm25: number): Hourly
     pm25: Math.max(6, Math.round(pt.pm25 * ratio)),
   }));
 }
+
+/**
+ * Determines whether a sustainable swap directly targets a primary emission source
+ * or health sensitivity in the household's active profile.
+ */
+export function isSwapTailoredToProfile(
+  swap: Pick<SustainableSwap, 'id'>,
+  profile: Pick<HouseholdProfile, 'heating' | 'commute' | 'cooking' | 'sensitivities'>
+): boolean {
+  if (swap.id === 'swap-no-wood-burn' && profile.heating === 'wood_coal') return true;
+  if (
+    (swap.id === 'swap-thermostat-setback' || swap.id === 'swap-heat-pump-transition') &&
+    (profile.heating === 'gas_furnace' || profile.heating === 'wood_coal')
+  ) {
+    return true;
+  }
+  if (
+    (swap.id === 'swap-cold-start-transit' || swap.id === 'swap-trip-chaining') &&
+    (profile.commute === 'solo_car' || profile.commute === 'diesel_commute')
+  ) {
+    return true;
+  }
+  if (
+    swap.id === 'swap-electric-countertop' &&
+    (profile.cooking === 'gas_stove' || profile.cooking === 'biomass_solid')
+  ) {
+    return true;
+  }
+  if (swap.id === 'swap-zero-idle-zone' && profile.sensitivities.includes('children')) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Sorts sustainable swaps so profile-matched actions appear first while preserving relative order.
+ */
+export function sortSwapsForProfile(
+  swaps: SustainableSwap[],
+  profile: Pick<HouseholdProfile, 'heating' | 'commute' | 'cooking' | 'sensitivities'>
+): SustainableSwap[] {
+  return [...swaps].sort(
+    (a, b) =>
+      Number(isSwapTailoredToProfile(b, profile)) - Number(isSwapTailoredToProfile(a, profile))
+  );
+}
+

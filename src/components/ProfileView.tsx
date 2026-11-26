@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, MapPin } from 'lucide-react';
 import type {
   BuildingType,
@@ -21,12 +21,82 @@ interface ProfileViewProps {
   onSaveProfile: (next: HouseholdProfile, tailorAfterSave: boolean) => void;
 }
 
-const SENSITIVITY_OPTIONS: Array<{ id: SensitivityGroup; label: string; detail: string }> = [
+const SENSITIVITY_OPTIONS: ReadonlyArray<{
+  id: SensitivityGroup;
+  label: string;
+  detail: string;
+}> = [
   { id: 'children', label: 'Young children', detail: 'Developing lungs & school commute exposure' },
   { id: 'older_adults', label: 'Older adults (65+)', detail: 'Higher cardiovascular particulate sensitivity' },
   { id: 'asthma_respiratory', label: 'Asthma or COPD', detail: 'Triggered by PM2.5 and indoor gas NO₂' },
   { id: 'outdoor_workers', label: 'Outdoor commuters / workers', detail: 'Prolonged street-level inhalation' },
 ];
+
+const HEATING_OPTIONS: ReadonlyArray<{ value: HeatingType; label: string }> = [
+  { value: 'wood_coal', label: 'Wood Stove / Fireplace / Coal' },
+  { value: 'gas_furnace', label: 'Natural Gas / Oil Furnace' },
+  { value: 'district_heating', label: 'Municipal District Heating' },
+  { value: 'heat_pump', label: 'Electric Heat Pump' },
+  { value: 'electric_space', label: 'Electric Baseboard / Space Heaters' },
+];
+
+const COMMUTE_OPTIONS: ReadonlyArray<{ value: CommuteMode; label: string }> = [
+  { value: 'solo_car', label: 'Solo Petrol Car / School Drop-off' },
+  { value: 'diesel_commute', label: 'Diesel Vehicle / Van' },
+  { value: 'public_transit', label: 'Public Transit (Bus / Rail)' },
+  { value: 'walk_cycle', label: 'Walking / Cycling' },
+  { value: 'hybrid_remote', label: 'Hybrid / Mostly Remote' },
+];
+
+const COOKING_OPTIONS: ReadonlyArray<{ value: CookingType; label: string }> = [
+  { value: 'gas_stove', label: 'Gas Range / Open Flame' },
+  { value: 'induction', label: 'Induction Cooktop' },
+  { value: 'electric_coil', label: 'Electric Coil / Ceramic' },
+  { value: 'biomass_solid', label: 'Solid-Fuel / Biomass Stove' },
+];
+
+const BUILDING_OPTIONS: ReadonlyArray<{ value: BuildingType; label: string }> = [
+  { value: 'older_drafty', label: 'Older Building (Drafty Windows)' },
+  { value: 'apartment_midrise', label: 'Mid-Rise Apartment (Shared Hallways)' },
+  { value: 'detached_home', label: 'Detached Single-Family Home' },
+  { value: 'modern_insulated', label: 'Modern Tightly Insulated Home' },
+];
+
+interface ProfileSelectProps<T extends string> {
+  id: string;
+  label: string;
+  value: T;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+}
+
+function ProfileSelect<T extends string>({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: ProfileSelectProps<T>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-medium text-slate-700 mb-1.5">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#0F766E]"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
   const [city, setCity] = useState(profile.city);
@@ -41,6 +111,19 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
   const [sensitivities, setSensitivities] = useState<SensitivityGroup[]>(profile.sensitivities);
   const [errors, setErrors] = useState<ProfileValidationErrors>({});
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCity(profile.city);
+    setRegionLabel(profile.regionLabel);
+    setCurrentAqi(String(profile.currentAqi));
+    setHouseholdSize(String(profile.householdSize));
+    setCommunityHomes(String(profile.communityHomes));
+    setHeating(profile.heating);
+    setCommute(profile.commute);
+    setCooking(profile.cooking);
+    setBuilding(profile.building);
+    setSensitivities(profile.sensitivities);
+  }, [profile]);
 
   const applyPreset = (preset: CityPreset) => {
     setCity(preset.city);
@@ -120,7 +203,6 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
           </p>
         </div>
 
-        {/* City Presets */}
         <div className="space-y-2.5 pt-4 border-t border-slate-100">
           <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
             <MapPin className="w-3.5 h-3.5 text-[#0F766E]" aria-hidden="true" />
@@ -133,6 +215,7 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                 <button
                   key={preset.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => applyPreset(preset)}
                   className={`text-left p-3 rounded-lg border transition-colors cursor-pointer ${
                     isSelected
@@ -152,7 +235,6 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={(e) => handleSubmit(e, false)} noValidate className="space-y-6 pt-4 border-t border-slate-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
@@ -163,6 +245,8 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                 id="profile-city"
                 type="text"
                 value={city}
+                aria-invalid={Boolean(errors.city)}
+                aria-describedby={errors.city ? 'profile-city-error' : undefined}
                 onChange={(e) => {
                   setCity(e.target.value);
                   if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
@@ -174,7 +258,7 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                 }`}
               />
               {errors.city && (
-                <p role="alert" className="mt-1 text-xs text-[#B91C1C]">
+                <p id="profile-city-error" role="alert" className="mt-1 text-xs text-[#B91C1C]">
                   {errors.city}
                 </p>
               )}
@@ -207,6 +291,8 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                 min={0}
                 max={500}
                 value={currentAqi}
+                aria-invalid={Boolean(errors.currentAqi)}
+                aria-describedby={errors.currentAqi ? 'profile-aqi-error' : undefined}
                 onChange={(e) => {
                   setCurrentAqi(e.target.value);
                   if (errors.currentAqi) setErrors((prev) => ({ ...prev, currentAqi: undefined }));
@@ -217,7 +303,7 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                 }`}
               />
               {errors.currentAqi && (
-                <p role="alert" className="mt-1 text-xs text-[#B91C1C]">
+                <p id="profile-aqi-error" role="alert" className="mt-1 text-xs text-[#B91C1C]">
                   {errors.currentAqi}
                 </p>
               )}
@@ -234,6 +320,8 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                   min={1}
                   max={25}
                   value={householdSize}
+                  aria-invalid={Boolean(errors.householdSize)}
+                  aria-describedby={errors.householdSize ? 'profile-size-error' : undefined}
                   onChange={(e) => {
                     setHouseholdSize(e.target.value);
                     if (errors.householdSize)
@@ -245,7 +333,7 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                   }`}
                 />
                 {errors.householdSize && (
-                  <p role="alert" className="mt-1 text-xs text-[#B91C1C]">
+                  <p id="profile-size-error" role="alert" className="mt-1 text-xs text-[#B91C1C]">
                     {errors.householdSize}
                   </p>
                 )}
@@ -261,6 +349,8 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                   min={1}
                   max={10000}
                   value={communityHomes}
+                  aria-invalid={Boolean(errors.communityHomes)}
+                  aria-describedby={errors.communityHomes ? 'profile-community-error' : undefined}
                   onChange={(e) => {
                     setCommunityHomes(e.target.value);
                     if (errors.communityHomes)
@@ -274,7 +364,7 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                   }`}
                 />
                 {errors.communityHomes && (
-                  <p role="alert" className="mt-1 text-xs text-[#B91C1C]">
+                  <p id="profile-community-error" role="alert" className="mt-1 text-xs text-[#B91C1C]">
                     {errors.communityHomes}
                   </p>
                 )}
@@ -282,80 +372,49 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
             </div>
           </div>
 
-          {/* Lifestyle & Home Systems */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-slate-100">
-            <div>
-              <label htmlFor="profile-heating" className="block text-xs font-medium text-slate-700 mb-1.5">
-                Primary Winter Heating
-              </label>
-              <select
-                id="profile-heating"
-                value={heating}
-                onChange={(e) => setHeating(e.target.value as HeatingType)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#0F766E]"
-              >
-                <option value="wood_coal">Wood Stove / Fireplace / Coal</option>
-                <option value="gas_furnace">Natural Gas / Oil Furnace</option>
-                <option value="district_heating">Municipal District Heating</option>
-                <option value="heat_pump">Electric Heat Pump</option>
-                <option value="electric_space">Electric Baseboard / Space Heaters</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="profile-commute" className="block text-xs font-medium text-slate-700 mb-1.5">
-                Primary Weekday Commute
-              </label>
-              <select
-                id="profile-commute"
-                value={commute}
-                onChange={(e) => setCommute(e.target.value as CommuteMode)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#0F766E]"
-              >
-                <option value="solo_car">Solo Petrol Car / School Drop-off</option>
-                <option value="diesel_commute">Diesel Vehicle / Van</option>
-                <option value="public_transit">Public Transit (Bus / Rail)</option>
-                <option value="walk_cycle">Walking / Cycling</option>
-                <option value="hybrid_remote">Hybrid / Mostly Remote</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="profile-cooking" className="block text-xs font-medium text-slate-700 mb-1.5">
-                Kitchen Cooking Appliance
-              </label>
-              <select
-                id="profile-cooking"
-                value={cooking}
-                onChange={(e) => setCooking(e.target.value as CookingType)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#0F766E]"
-              >
-                <option value="gas_stove">Gas Range / Open Flame</option>
-                <option value="induction">Induction Cooktop</option>
-                <option value="electric_coil">Electric Coil / Ceramic</option>
-                <option value="biomass_solid">Solid-Fuel / Biomass Stove</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="profile-building" className="block text-xs font-medium text-slate-700 mb-1.5">
-                Building Envelope & Draftiness
-              </label>
-              <select
-                id="profile-building"
-                value={building}
-                onChange={(e) => setBuilding(e.target.value as BuildingType)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#0F766E]"
-              >
-                <option value="older_drafty">Older Building (Drafty Windows)</option>
-                <option value="apartment_midrise">Mid-Rise Apartment (Shared Hallways)</option>
-                <option value="detached_home">Detached Single-Family Home</option>
-                <option value="modern_insulated">Modern Tightly Insulated Home</option>
-              </select>
-            </div>
+            <ProfileSelect
+              id="profile-heating"
+              label="Primary Winter Heating"
+              value={heating}
+              options={HEATING_OPTIONS}
+              onChange={(val) => {
+                setHeating(val);
+                setSavedNotice(null);
+              }}
+            />
+            <ProfileSelect
+              id="profile-commute"
+              label="Primary Weekday Commute"
+              value={commute}
+              options={COMMUTE_OPTIONS}
+              onChange={(val) => {
+                setCommute(val);
+                setSavedNotice(null);
+              }}
+            />
+            <ProfileSelect
+              id="profile-cooking"
+              label="Kitchen Cooking Appliance"
+              value={cooking}
+              options={COOKING_OPTIONS}
+              onChange={(val) => {
+                setCooking(val);
+                setSavedNotice(null);
+              }}
+            />
+            <ProfileSelect
+              id="profile-building"
+              label="Building Envelope & Draftiness"
+              value={building}
+              options={BUILDING_OPTIONS}
+              onChange={(val) => {
+                setBuilding(val);
+                setSavedNotice(null);
+              }}
+            />
           </div>
 
-          {/* Sensitive Household Members */}
           <fieldset className="pt-4 border-t border-slate-100 space-y-3">
             <legend className="text-xs font-medium text-slate-700">
               Household Air-Quality Sensitivities
@@ -383,7 +442,7 @@ export function ProfileView({ profile, onSaveProfile }: ProfileViewProps) {
                           : 'bg-white border-slate-300 text-transparent'
                       }`}
                     >
-                      <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      <Check className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
                     </span>
                     <div>
                       <div className="text-sm font-medium text-slate-900">{opt.label}</div>

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Check, RefreshCw, ArrowRight, AlertCircle, Wind } from 'lucide-react';
 import type {
   AqiClassification,
@@ -45,9 +46,12 @@ export function DailyRoutineView({
   onTailorWithAi,
   onNavigate,
 }: DailyRoutineViewProps) {
-  const ventWindow = findBestVentilationWindow(hourlyCurve);
-  const completedSet = new Set(completedRoutineIds);
-  const completedCount = routineBlocks.filter((b) => completedSet.has(b.id)).length;
+  const ventWindow = useMemo(() => findBestVentilationWindow(hourlyCurve), [hourlyCurve]);
+  const completedSet = useMemo(() => new Set(completedRoutineIds), [completedRoutineIds]);
+  const completedCount = useMemo(
+    () => routineBlocks.filter((b) => completedSet.has(b.id)).length,
+    [routineBlocks, completedSet]
+  );
 
   return (
     <div className="space-y-8">
@@ -79,7 +83,7 @@ export function DailyRoutineView({
               disabled={isTailoring}
               className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#0F766E] rounded-lg hover:bg-[#0D655E] disabled:opacity-60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${isTailoring ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isTailoring ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span>{isTailoring ? 'Tailoring Plan…' : aiPlan ? 'Refresh AI Plan' : 'Tailor Plan with AI'}</span>
             </button>
             <button
@@ -88,7 +92,7 @@ export function DailyRoutineView({
               className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <span>Ask Air Advisor</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -100,7 +104,7 @@ export function DailyRoutineView({
             className="mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-sm text-[#991B1B]"
           >
             <div className="flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
               <span>{tailorError}</span>
             </div>
             <button
@@ -296,7 +300,7 @@ export function DailyRoutineView({
                             : 'bg-white border-slate-300 text-transparent hover:border-[#0F766E]'
                         }`}
                       >
-                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
                       </button>
 
                       <div className="min-w-0 flex-1 space-y-2">

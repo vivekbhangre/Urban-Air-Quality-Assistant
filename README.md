@@ -13,22 +13,26 @@ ClearWinter is a GenAI-powered web application that helps families and communiti
 ## Architecture & Project Structure
 
 ```text
-├── server.ts                  # Express + Vite full-stack entry point
+├── server.ts                  # Express + Vite full-stack entry point & createApp() factory
 ├── server/
 │   ├── gemini.ts              # Singleton Gemini SDK client, model fallback, retry logic, bounded TTL cache, JSON schemas
 │   ├── security.ts            # Input validation/sanitization, security headers, sliding-window rate limiter
-│   └── security.test.ts       # Unit tests for server validation, rate limiting, and caching
+│   ├── security.test.ts       # Unit tests for server validation, rate limiting, and caching
+│   └── app.test.ts            # HTTP integration tests for Express routes, headers, and rate limits
 ├── src/
-│   ├── App.tsx                # Application shell, accessible navigation, persisted state
-│   ├── components/            # Modular, accessible UI views + ErrorBoundary
+│   ├── App.tsx                # Lean application shell composing navigation and views
+│   ├── components/            # Modular, accessible UI views, AppNavigation, ErrorBoundary
 │   ├── data/airData.ts        # Winter inversion basin presets, indoor protocols, sustainable swaps
-│   ├── services/api.ts        # Client API helpers with response normalization
+│   ├── hooks/useClearWinterState.ts # Centralized household, simulation, and AI workflow hook
+│   ├── services/api.ts        # Timeout-protected client API helpers with response normalization
 │   ├── types/air.ts           # Strict TypeScript domain models
 │   └── utils/
 │       ├── airImpact.ts       # Pure air-quality math, infiltration & community scaling models
 │       ├── airImpact.test.ts  # Unit tests for core environmental math & validation
 │       ├── normalizeAi.ts     # Defensive schema normalization for GenAI JSON responses
-│       └── normalizeAi.test.ts# Unit tests for AI response normalization
+│       ├── normalizeAi.test.ts# Unit tests for AI response normalization
+│       ├── storage.ts         # Defensive localStorage hydration and quota-safe persistence
+│       └── storage.test.ts    # Unit tests for state persistence and corrupted-storage recovery
 ```
 
 ## Security & Efficiency Safeguards

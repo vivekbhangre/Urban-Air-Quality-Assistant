@@ -62,7 +62,7 @@ export function AirAdvisorView({
               onClick={onClearChat}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer self-start"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Clear Conversation</span>
             </button>
           )}
@@ -152,7 +152,7 @@ export function AirAdvisorView({
                   {msg.isError ? (
                     <div className="space-y-3">
                       <div className="flex items-start gap-2 text-sm">
-                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
                         <span>{msg.content}</span>
                       </div>
                       {lastUserMessage && (
@@ -215,6 +215,8 @@ export function AirAdvisorView({
               id="advisor-question-input"
               type="text"
               value={draft}
+              aria-invalid={Boolean(inputError)}
+              aria-describedby={inputError ? 'advisor-input-error' : undefined}
               onChange={(e) => {
                 setDraft(e.target.value);
                 if (inputError) setInputError(null);
@@ -227,12 +229,12 @@ export function AirAdvisorView({
               disabled={isSending}
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#0F766E] rounded-lg hover:bg-[#0D655E] disabled:opacity-60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4" aria-hidden="true" />
               <span>{isSending ? 'Sending…' : 'Send'}</span>
             </button>
           </div>
           {inputError && (
-            <p role="alert" className="text-xs text-[#B91C1C]">
+            <p id="advisor-input-error" role="alert" className="text-xs text-[#B91C1C]">
               {inputError}
             </p>
           )}

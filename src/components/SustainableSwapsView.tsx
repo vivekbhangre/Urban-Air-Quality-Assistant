@@ -6,6 +6,7 @@ import type {
   SwapCategory,
   SwapImpactTotals,
 } from '../types/air';
+import { isSwapTailoredToProfile, sortSwapsForProfile } from '../utils/airImpact';
 
 interface SustainableSwapsViewProps {
   profile: HouseholdProfile;
@@ -26,32 +27,6 @@ const CATEGORIES: Array<'All' | SwapCategory> = [
 
 const COMMUNITY_SCALES = [1, 25, 100, 500];
 
-function isSwapTailoredToProfile(swap: SustainableSwap, profile: HouseholdProfile): boolean {
-  if (swap.id === 'swap-no-wood-burn' && profile.heating === 'wood_coal') return true;
-  if (
-    (swap.id === 'swap-thermostat-setback' || swap.id === 'swap-heat-pump-transition') &&
-    (profile.heating === 'gas_furnace' || profile.heating === 'wood_coal')
-  ) {
-    return true;
-  }
-  if (
-    (swap.id === 'swap-cold-start-transit' || swap.id === 'swap-trip-chaining') &&
-    (profile.commute === 'solo_car' || profile.commute === 'diesel_commute')
-  ) {
-    return true;
-  }
-  if (
-    swap.id === 'swap-electric-countertop' &&
-    (profile.cooking === 'gas_stove' || profile.cooking === 'biomass_solid')
-  ) {
-    return true;
-  }
-  if (swap.id === 'swap-zero-idle-zone' && profile.sensitivities.includes('children')) {
-    return true;
-  }
-  return false;
-}
-
 export function SustainableSwapsView({
   profile,
   swaps,
@@ -65,10 +40,7 @@ export function SustainableSwapsView({
 
   const filteredSwaps = useMemo(() => {
     const base = category === 'All' ? swaps : swaps.filter((s) => s.category === category);
-    return [...base].sort(
-      (a, b) =>
-        Number(isSwapTailoredToProfile(b, profile)) - Number(isSwapTailoredToProfile(a, profile))
-    );
+    return sortSwapsForProfile(base, profile);
   }, [category, swaps, profile]);
 
   return (
@@ -244,7 +216,7 @@ export function SustainableSwapsView({
                         : 'bg-white border-slate-300 text-transparent hover:border-[#0F766E]'
                     }`}
                   >
-                    <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    <Check className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
                   </button>
 
                   <div className="space-y-2 min-w-0 flex-1">
@@ -278,7 +250,7 @@ export function SustainableSwapsView({
                   </div>
                 </div>
 
-                <div className="md:w-48 shrink-0 md:text-right pl-10 md:pl-0 md:border-l md:border-slate-100 md:pl-5 space-y-1">
+                <div className="md:w-48 shrink-0 md:text-right pl-10 md:border-l md:border-slate-100 md:pl-5 space-y-1">
                   <div className="font-mono text-sm font-semibold tabular-nums text-[#0F766E]">
                     -{swap.dailyPm25GramsAvoided} g PM2.5 / day
                   </div>

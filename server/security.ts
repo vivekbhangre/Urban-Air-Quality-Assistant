@@ -215,7 +215,21 @@ export function securityHeadersMiddleware(_req: Request, res: Response, next: Ne
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
   next();
+}
+
+export function jsonSyntaxErrorMiddleware(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (err instanceof SyntaxError && 'body' in err) {
+    res.status(400).json({ error: 'Malformed JSON request body.' });
+    return;
+  }
+  next(err);
 }
 
 export function createRateLimitMiddleware(limiter: SlidingWindowRateLimiter) {
